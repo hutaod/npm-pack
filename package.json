@@ -1,0 +1,27 @@
+{
+  "name": "htpack",
+  "version": "1.0.0",
+  "description": "enhance npm pack，can use monorepo",
+  "main": "index.js",
+  "bin": {
+    "htpack": "./bin/htpack"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hutaod/npm-pack.git"
+  },
+  "keywords": [],
+  "author": "hutaod",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hutaod/npm-pack/issues"
+  },
+  "homepage": "https://github.com/hutaod/npm-pack#readme",
+  "devDependencies": {
+    "@types/tar": "^6.1.4",
+    "tar": "^6.1.13"
+  }
+}
