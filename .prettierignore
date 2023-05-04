@@ -1,0 +1,7 @@
+/.idea
+/.vscode
+/.next
+/out
+legacy
+/static
+*.test.*

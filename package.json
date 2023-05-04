@@ -23,5 +23,12 @@
   "devDependencies": {
     "@types/tar": "^6.1.4",
     "tar": "^6.1.13"
+  },
+  "dependencies": {
+    "arg": "^5.0.2",
+    "fast-glob": "^3.2.12",
+    "npm-bundled": "^3.0.0",
+    "npm-normalize-package-bin": "^3.0.1",
+    "path-to-regexp": "^6.2.1"
   }
 }
