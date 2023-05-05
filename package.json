@@ -21,14 +21,16 @@
   },
   "homepage": "https://github.com/hutaod/npm-pack#readme",
   "devDependencies": {
-    "@types/tar": "^6.1.4",
-    "tar": "^6.1.13"
+    "@types/tar": "^6.1.4"
   },
   "dependencies": {
     "arg": "^5.0.2",
+    "compressing": "^1.9.0",
     "fast-glob": "^3.2.12",
     "npm-bundled": "^3.0.0",
     "npm-normalize-package-bin": "^3.0.1",
-    "path-to-regexp": "^6.2.1"
+    "path-to-regexp": "^6.2.1",
+    "tar": "^6.1.13",
+    "yaml": "^2.2.2"
   }
 }

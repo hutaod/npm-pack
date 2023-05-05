@@ -1,5 +1,4 @@
 const fs = require("fs")
-const arg = require("arg")
 const { promisify } = require("util")
 const readdir = promisify(fs.readdir)
 const bundled = promisify(require("./npm-bundled"))
@@ -12,7 +11,7 @@ async function getPackFiles(packPath, nodeModulesPath) {
 
     // 2. 获取node_modules内容
     const moduleList = await getModuleList({ path: packPath, nodeModulesPath: nodeModulesPath || process.cwd(), bundleDependenciesKey: "dependencies" });
-    return [...fileList, ...moduleList];
+    return { fileList, moduleList };
   } catch (error) {
     console.log(error)
   }
