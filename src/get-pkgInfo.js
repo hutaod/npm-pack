@@ -17,14 +17,12 @@ module.exports = async function findPkgInfo (workspace) {
   const usePnpm = pkgManager === "pnpm";
 
   const workspaces = ["packages/*"];
-  console.log(usePnpm);
   if (usePnpm) {
     try {
       const file = fs.readFileSync(`${process.cwd()}/pnpm-workspace.yaml`, 'utf8')
       const data = YAML.parse(file)
-      console.log(data);
       if(data) {
-        workspaces.push(...(data.workspaces || []))
+        workspaces.push(...(data.packages || []))
       }
     } catch (error) {
       console.log(error);

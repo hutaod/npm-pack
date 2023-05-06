@@ -13,24 +13,27 @@ const EE = require('events').EventEmitter
 // we don't care about the package bins, but we share a pj cache
 // with other modules that DO care about it, so keep it nice.
 const normalizePackageBin = require('npm-normalize-package-bin')
+const { promisify } = require('util')
+
+let rootModules;
+const rootSeen = new Set()
 
 class BundleWalker extends EE {
   constructor (opt) {
     opt = opt || {}
     super(opt)
     this.path = path.resolve(opt.path || process.cwd())
-    this.nodeModulesPath = path.resolve(opt.nodeModulesPath || opt.path || process.cwd())
-    this.bundleDependenciesKey = opt.nodeModulesPath || "bundleDependencies";
+    this.bundleDependenciesKey = opt.bundleDependenciesKey || "bundleDependencies";
 
     this.parent = opt.parent || null
     if (this.parent) {
       this.result = this.parent.result
       // only collect results in node_modules folders at the top level
       // since the node_modules in a bundled dep is included always
-      if (!this.parent.parent) {
-        const base = path.basename(this.path)
-        const scope = path.basename(path.dirname(this.path))
-        this.result.add(/^@/.test(scope) ? scope + '/' + base : base)
+      if (!this.parent.parent || opt.inRoot) {
+        // const base = path.basename(this.path)
+        // const scope = path.basename(path.dirname(this.path))
+        this.result.add(this.path)
       }
       this.root = this.parent.root
       this.packageJsonCache = this.parent.packageJsonCache
@@ -123,8 +126,24 @@ class BundleWalker extends EE {
     this.readModules()
   }
 
-  readModules () {
-    readdirNodeModules(this.nodeModulesPath + '/node_modules', (er, nm) =>
+  async readRootModules (needRead) {
+    if (!needRead) {
+      rootModules = [];
+    }
+    if(rootModules) {
+      return rootModules;
+    }
+    try {
+      const nm = await readdirNodeModulesAsync(process.cwd() + '/node_modules')
+      rootModules = nm;
+    } catch (error) {
+      rootModules = [];
+    }
+  }
+
+  async readModules () {
+    await this.readRootModules(this.path !== process.cwd());
+    readdirNodeModules(this.path + '/node_modules', (er, nm) =>
       er ? this.onReaddir([]) : this.onReaddir(nm))
   }
 
@@ -144,17 +163,23 @@ class BundleWalker extends EE {
         this.seen.add(dep)
         this.child(dep)
       }
+    } else if (rootModules.indexOf(dep) !== -1) {
+      if (!rootSeen.has(dep)) {
+        rootSeen.add(dep)
+        this.child(dep, true)
+      }
     } else if (this.parent) {
       this.parent.childDep(dep)
     }
   }
 
-  child (dep) {
-    const p = this.nodeModulesPath + '/node_modules/' + dep
+  child (dep, inRoot) {
+    const p = (inRoot ? process.cwd() : this.path)+ '/node_modules/' + dep
     this.children += 1
     const child = new BundleWalker({
       path: p,
       parent: this,
+      inRoot: inRoot,
     })
     child.on('done', _ => {
       if (--this.children === 0) {
@@ -162,38 +187,6 @@ class BundleWalker extends EE {
       }
     })
     child.start()
-  }
-}
-
-class BundleWalkerSync extends BundleWalker {
-  start () {
-    super.start()
-    this.done()
-    return this
-  }
-
-  readPackageJson (pj) {
-    try {
-      this.onPackageJson(pj, fs.readFileSync(pj))
-    } catch {
-      // empty catch
-    }
-    return this
-  }
-
-  readModules () {
-    try {
-      this.onReaddir(readdirNodeModulesSync(this.nodeModulesPath + '/node_modules'))
-    } catch {
-      this.onReaddir([])
-    }
-  }
-
-  child (dep) {
-    new BundleWalkerSync({
-      path: this.nodeModulesPath + '/node_modules/' + dep,
-      parent: this,
-    }).start()
   }
 }
 
@@ -225,19 +218,7 @@ const readdirNodeModules = (nm, cb) => {
   })
 }
 
-const readdirNodeModulesSync = nm => {
-  const set = fs.readdirSync(nm)
-  const unscoped = set.filter(f => !/^@/.test(f))
-  const scopes = set.filter(f => /^@/.test(f)).map(scope => {
-    try {
-      const pkgs = fs.readdirSync(nm + '/' + scope)
-      return pkgs.length ? pkgs.map(p => scope + '/' + p) : [scope]
-    } catch (er) {
-      return [scope]
-    }
-  }).reduce((a, b) => a.concat(b), [])
-  return unscoped.concat(scopes)
-}
+const readdirNodeModulesAsync = promisify(readdirNodeModules);
 
 const walk = (options, callback) => {
   const p = new Promise((resolve, reject) => {
@@ -246,11 +227,5 @@ const walk = (options, callback) => {
   return callback ? p.then(res => callback(null, res), callback) : p
 }
 
-const walkSync = options => {
-  return new BundleWalkerSync(options).start().result
-}
-
 module.exports = walk
-walk.sync = walkSync
 walk.BundleWalker = BundleWalker
-walk.BundleWalkerSync = BundleWalkerSync

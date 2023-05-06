@@ -39,10 +39,11 @@ function generateTgz(targetPath, { fileList, moduleList }) {
     tarStream.addEntry(file);
   }
   for (let index = 0; index < moduleList.length; index++) {
-    const module = moduleList[index];
-    const moduleName = module.split("node_modules/")[1];
+    const moduleItem = moduleList[index];
+    const slices = moduleItem.split("node_modules/");
+    const moduleName = slices[slices.length - 1];
     const scope = moduleName.startsWith("@") ? moduleName.match(/(@.+)\//)?.[1] : "";
-    tarStream.addEntry(module, { relativePath: `./node_modules/${scope || ""}` });
+    tarStream.addEntry(moduleItem, { relativePath: `./node_modules/${scope || ""}` });
   }
   tarStream.pipe(writeStream)
 }
